@@ -1,12 +1,7 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:cli'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any // שינוי הסוכן כדי להשתמש ישירות בכלים המותקנים על שרת הג'נקינס (כולל aws cli)
+
     environment {
-        // הגדרת משתני סביבה כלליים - ללא סיסמאות או מפתחות סודיים!
         AWS_ACCOUNT_ID = "992382545251"
         AWS_DEFAULT_REGION = "us-east-1"
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
@@ -40,7 +35,6 @@ pipeline {
                 branch 'PR-*' 
             }
             steps {
-                // תיקון ה-docker login לפנות לדומיין הנקי של ECR ללא שם ה-repository בסוף
                 sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                 sh "docker push ${ECR_URL}:${IMAGE_TAG}"
             }
