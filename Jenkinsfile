@@ -6,7 +6,12 @@ pipeline {
         }
     }
     environment {
-        ECR_URL = "992382545251.dkr.ecr.us-east-1.amazonaws.com/ci-cd-exam-calculator-app"
+        // הגדרת משתני סביבה כלליים - ללא סיסמאות או מפתחות סודיים!
+        AWS_ACCOUNT_ID = "992382545251"
+        AWS_DEFAULT_REGION = "us-east-1"
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+        ECR_REPOSITORY = "ci-cd-exam-calculator-app"
+        ECR_URL = "${ECR_REGISTRY}/${ECR_REPOSITORY}"
         IMAGE_TAG = "pr-${env.CHANGE_ID}-${env.BUILD_NUMBER}"
     }
     stages {
@@ -35,7 +40,8 @@ pipeline {
                 branch 'PR-*' 
             }
             steps {
-                sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${ECR_URL}"
+                // תיקון ה-docker login לפנות לדומיין הנקי של ECR ללא שם ה-repository בסוף
+                sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                 sh "docker push ${ECR_URL}:${IMAGE_TAG}"
             }
         }
