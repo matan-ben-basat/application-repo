@@ -1,5 +1,5 @@
 pipeline {
-    agent any // שינוי הסוכן כדי להשתמש ישירות בכלים המותקנים על שרת הג'נקינס (כולל aws cli)
+    agent any
 
     environment {
         AWS_ACCOUNT_ID = "992382545251"
@@ -35,7 +35,10 @@ pipeline {
                 branch 'PR-*' 
             }
             steps {
-                sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                // שימוש בקונטיינר זמני של AWS CLI המכיל את הכלים המובנים כדי לבצע לוגין ולדחוף ל-ECR בבטחה
+                withDockerContainer(image: 'amazon/aws-cli') {
+                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                }
                 sh "docker push ${ECR_URL}:${IMAGE_TAG}"
             }
         }
