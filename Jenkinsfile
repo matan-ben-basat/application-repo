@@ -35,10 +35,8 @@ pipeline {
                 branch 'PR-*' 
             }
             steps {
-                // שימוש בקונטיינר זמני של AWS CLI המכיל את הכלים המובנים כדי לבצע לוגין ולדחוף ל-ECR בבטחה
-                withDockerContainer(image: 'amazon/aws-cli') {
-                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
-                }
+                // הרצת קונטיינר זמני רק כדי לשלוף את הטוקן, והעברתו לפקודת docker login שרצה בסביבת ג'נקינס
+                sh "docker run --rm -v ~/.aws:/root/.aws amazon/aws-cli ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                 sh "docker push ${ECR_URL}:${IMAGE_TAG}"
             }
         }
