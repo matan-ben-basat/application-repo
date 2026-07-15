@@ -1,9 +1,10 @@
 pipeline {
     agent {
         docker {
-            image 'amazon/aws-cli:latest'
-            // מיפוי ה-Socket בצורה מאובטחת לסוכן כדי לאפשר בנייה ודחיפה
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
+            // שימוש באימג' הרשמי של דוקר שמאפשר הרצת פקודות דוקר בפנים
+            image 'docker:cli'
+            // מיפוי הסוקט והרצת הסוכן כ-root למניעת בעיות הרשאות מול המארח
+            args '-v /var/run/docker.sock:/var/run/docker.sock -u root'
         }
     }
 
@@ -13,16 +14,15 @@ pipeline {
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
         ECR_REPOSITORY = "ci-cd-exam-calculator-app"
         ECR_URL = "${ECR_REGISTRY}/${ECR_REPOSITORY}"
-        // שים לב: מחקנו מכאן את ה-IMAGE_TAG לחלוטין!
     }
 
     stages {
-        // ==================== שלבי ה-CI (רצים תמיד) ====================
+        // ==================== שלבי ה-CI ====================
         
-        stage('Initialize Variables') {
+        stage('Initialize Environment') {
             steps {
                 script {
-                    // חישוב הטאג בצורה חוקית בתוך בלוק script
+                    // הגדרה חוקית של טאג האימג' בתוך בלוק סקריפט
                     if (env.CHANGE_ID) {
                         env.IMAGE_TAG = "pr-${env.CHANGE_ID}-${env.BUILD_NUMBER}"
                     } else {
@@ -31,6 +31,8 @@ pipeline {
                     }
                     echo "Target Image Tag will be: ${env.IMAGE_TAG}"
                 }
+                // התקנת הכלים החסרים באימג' (AWS CLI ו-SSH) בזמן אמת
+                sh "apk add --no-cache aws-cli openssh-client curl"
             }
         }
 
@@ -52,7 +54,7 @@ pipeline {
             }
         }
 
-        // ==================== שלבי ה-CD (דחיפה ופריסה) ====================
+        // ==================== שלבי ה-CD ====================
 
         stage('Push PR Image to ECR') {
             when { 
@@ -66,13 +68,13 @@ pipeline {
 
         stage('Push Master Image to ECR') {
             when { 
-                branch 'master' // אם הענף שלך בגיט נקרא main, שנה את המילה master ל-main
+                branch 'main' 
             }
             steps {
                 sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                 sh "docker push ${ECR_URL}:${env.IMAGE_TAG}"
                 
-                // תיוג נוסף כ-latest עבור הפריסה
+                // תיוג כ-latest עבור סביבת הפרודקשן
                 sh "docker tag ${ECR_URL}:${env.IMAGE_TAG} ${ECR_URL}:latest"
                 sh "docker push ${ECR_URL}:latest"
             }
@@ -80,7 +82,7 @@ pipeline {
 
         stage('Deploy to Prod EC2') {
             when { 
-                branch 'master' // אם הענף שלך בגיט נקרא main, שנה את המילה master ל-main
+                branch 'main' 
             }
             steps {
                 echo "Deploying to Production Server..."
@@ -100,7 +102,7 @@ pipeline {
 
         stage('Health Verification') {
             when { 
-                branch 'master' // אם הענף שלך בגיט נקרא main, שנה את המילה master ל-main
+                branch 'main' 
             }
             steps {
                 echo "Verifying application health..."
