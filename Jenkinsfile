@@ -21,7 +21,7 @@ pipeline {
         stage('Initialize Environment') {
             steps {
                 script {
-                    // קביעת הטאג לפי סוג הענף (PR מול סניף Master/Main)
+                    // קביעת הטאג לפי סוג הענף (PR מול סניף Main)
                     if (env.CHANGE_ID) {
                         env.IMAGE_TAG = "pr-${env.CHANGE_ID}-${env.BUILD_NUMBER}"
                     } else {
