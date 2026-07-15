@@ -59,11 +59,11 @@ pipeline {
                 withCredentials([sshUserPrivateKey(credentialsId: 'prod-ssh-key', keyFileVariable: 'IDENTITY')]) {
                     sh '''
                         ssh -i ${IDENTITY} -o StrictHostKeyChecking=no ubuntu@44.202.68.154 "
-                            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 992382545251.dkr.ecr.us-east-1.amazonaws.com/ci-cd-exam-calculator-app &&
-                            docker stop app-container || true &&
-                            docker rm app-container || true &&
-                            docker pull 992382545251.dkr.ecr.us-east-1.amazonaws.com/ci-cd-exam-calculator-app:latest &&
-                            docker run -d --name app-container -p 80:5000 992382545251.dkr.ecr.us-east-1.amazonaws.com/ci-cd-exam-calculator-app:latest
+                            aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin 992382545251.dkr.ecr.us-east-1.amazonaws.com/ci-cd-exam-calculator-app &&
+                            sudo docker stop app-container || true &&
+                            sudo docker rm app-container || true &&
+                            sudo docker pull 992382545251.dkr.ecr.us-east-1.amazonaws.com/ci-cd-exam-calculator-app:latest &&
+                            sudo docker run -d --name app-container -p 80:5000 992382545251.dkr.ecr.us-east-1.amazonaws.com/ci-cd-exam-calculator-app:latest
                         "
                     '''
                 }
