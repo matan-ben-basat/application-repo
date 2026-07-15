@@ -1,3 +1,4 @@
+cat << 'EOF' > Jenkinsfile
 pipeline {
     agent {
         docker {
@@ -7,12 +8,19 @@ pipeline {
     }
     environment {
         ECR_URL = "992382545251.dkr.ecr.us-east-1.amazonaws.com/ci-cd-exam-calculator-app"
-        IMAGE_TAG = env.CHANGE_ID ? "pr-${env.CHANGE_ID}-${env.BUILD_NUMBER}" : "candidate-${env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'latest'}"
+        IMAGE_TAG = ""
     }
     stages {
         stage('Initialize Environment') {
             steps {
                 script {
+                    if (env.CHANGE_ID) {
+                        IMAGE_TAG = "pr-${env.CHANGE_ID}-${env.BUILD_NUMBER}"
+                    } else if (env.GIT_COMMIT) {
+                        IMAGE_TAG = "candidate-${env.GIT_COMMIT.take(7)}"
+                    } else {
+                        IMAGE_TAG = "latest"
+                    }
                     echo "Determined Target Image Tag: ${IMAGE_TAG}"
                 }
                 sh "apk add --no-cache aws-cli openssh-client curl"
@@ -73,3 +81,4 @@ pipeline {
         }
     }
 }
+EOF
