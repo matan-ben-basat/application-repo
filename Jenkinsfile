@@ -1,4 +1,3 @@
-cat << 'EOF' > Jenkinsfile
 pipeline {
     agent {
         docker {
@@ -81,4 +80,3 @@ pipeline {
         }
     }
 }
-EOF
