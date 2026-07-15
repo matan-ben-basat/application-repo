@@ -37,13 +37,16 @@ pipeline {
 
         stage('Build Container Image') {
             steps {
-                sh "docker build -t ${ECR_URL}:${env.IMAGE_TAG} ."
+                // כניסה לתוך תיקיית האפליקציה שבה נמצא ה-Dockerfile
+                dir('calculator-app-v2') {
+                    sh "docker build -t ${ECR_URL}:${env.IMAGE_TAG} ."
+                }
             }
         }
 
         stage('Test') {
             steps {
-                // הרצת הבדיקות המלאות של המחשבון מתוך האימג'
+                // הרצת הבדיקות המלאות של המחשבון מתוך האימג' שנבנה
                 sh "docker run --name test-runner ${ECR_URL}:${env.IMAGE_TAG} python -m unittest discover -s tests -v"
             }
             post {
@@ -68,7 +71,7 @@ pipeline {
 
         stage('Push Master Image to ECR') {
             when { 
-                branch 'main' // תואם לענף הראשי שלך
+                branch 'main' // מותאם לענף הראשי שלך בגיט
             }
             steps {
                 sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
