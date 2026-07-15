@@ -2,7 +2,6 @@ pipeline {
     agent {
         docker {
             image 'docker:cli'
-            // מיפוי ה-Socket לאינטגרציה חוקית ונטרול ה-Entrypoint למניעת קריסות
             args '-v /var/run/docker.sock:/var/run/docker.sock --entrypoint='
         }
     }
@@ -16,12 +15,9 @@ pipeline {
     }
 
     stages {
-        // ==================== שלבי ה-CI ====================
-        
         stage('Initialize Environment') {
             steps {
                 script {
-                    // קביעת הטאג לפי סוג הענף (PR מול סניף Main)
                     if (env.CHANGE_ID) {
                         env.IMAGE_TAG = "pr-${env.CHANGE_ID}-${env.BUILD_NUMBER}"
                     } else {
@@ -30,14 +26,12 @@ pipeline {
                     }
                     echo "Determined Target Image Tag: ${env.IMAGE_TAG}"
                 }
-                // התקנת הכלים המשלימים בתוך הסוכן (aws-cli, ssh-client ו-curl)
                 sh "apk add --no-cache aws-cli openssh-client curl"
             }
         }
 
         stage('Build Container Image') {
             steps {
-                // כניסה לתוך תיקיית האפליקציה שבה נמצא ה-Dockerfile
                 dir('calculator-app-v2') {
                     sh "docker build -t ${ECR_URL}:${env.IMAGE_TAG} ."
                 }
@@ -46,7 +40,6 @@ pipeline {
 
         stage('Test') {
             steps {
-                // הרצת הבדיקות המלאות של המחשבון מתוך האימג' שנבנה
                 sh "docker run --name test-runner ${ECR_URL}:${env.IMAGE_TAG} python -m unittest discover -s tests -v"
             }
             post {
@@ -56,8 +49,6 @@ pipeline {
                 }
             }
         }
-
-        // ==================== שלבי ה-CD ====================
 
         stage('Push PR Image to ECR') {
             when { 
@@ -71,13 +62,11 @@ pipeline {
 
         stage('Push Master Image to ECR') {
             when { 
-                branch 'main' // מותאם לענף הראשי שלך בגיט
+                branch 'main' 
             }
             steps {
                 sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                 sh "docker push ${ECR_URL}:${env.IMAGE_TAG}"
-                
-                // תיוג נוסף כגרסת latest פרודקשן
                 sh "docker tag ${ECR_URL}:${env.IMAGE_TAG} ${ECR_URL}:latest"
                 sh "docker push ${ECR_URL}:latest"
             }
