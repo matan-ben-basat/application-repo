@@ -40,7 +40,8 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh "docker run --name test-runner ${ECR_URL}:${env.IMAGE_TAG} python -m unittest discover -s tests -v"
+                sh "docker rm -f test-runner || true"
+                sh "docker run --rm --name test-runner ${ECR_URL}:${env.IMAGE_TAG} python -m unittest discover -s tests -v"
             }
             post {
                 always {
